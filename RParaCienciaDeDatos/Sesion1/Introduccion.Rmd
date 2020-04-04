@@ -8,6 +8,7 @@ Trainer: Ruth Chirinos
 <h1>INTRODUCCIÓN</h1>
 Instalar las librerias necesarias si es que no lo tienes instalado.
 ```{r}
+install.packages("tidyverse")
 library(tidyverse)
 ```
 
