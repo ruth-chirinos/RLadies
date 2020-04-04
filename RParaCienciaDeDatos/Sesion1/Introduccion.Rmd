@@ -1,0 +1,99 @@
+---
+title: "R-Ladies La Paz ' - Sesión 1"
+output: html_notebook
+---
+Trainer: Ruth Chirinos
+
+
+<h1>INTRODUCCIÓN</h1>
+Instalar las librerias necesarias si es que no lo tienes instalado.
+```{r}
+library(tidyverse)
+```
+
+
+Instalar el paquete de datos:
+```{r}
+remotes::install_github("cienciadedatos/datos")
+```
+Instalamos otros paquetes utilitarios
+
+```{r}
+install.packages(c("nycflights13", "gapminder", "Lahman", "nasaweather", "babynames", "fueleconomy"))
+```
+
+
+<h3>Primeros Pasos </h3>
+<h4>Data Frame Millas </h4>
+```{r}
+datos::millas
+```
+```{r}
+#millas
+#> # A tibble: 234 x 11
+#>   fabricante modelo motor  anio cilindros transmision traccion ciudad
+#>   <chr>      <chr>  <dbl> <int>     <int> <chr>       <chr>     <int>
+#> 1 audi       a4       1.8  1999         4 auto(l5)    d            18
+#> 2 audi       a4       1.8  1999         4 manual(m5)  d            21
+#> 3 audi       a4       2    2008         4 manual(m6)  d            20
+#> 4 audi       a4       2    2008         4 auto(av)    d            21
+#> 5 audi       a4       2.8  1999         6 auto(l5)    d            16
+#> 6 audi       a4       2.8  1999         6 manual(m5)  d            18
+#> # … with 228 more rows, and 3 more variables: autopista <int>,
+#> #   combustible <chr>, clase <chr>
+```
+<h4>Más información del dataframe ¨millas¨</h4>
+
+```{r}
+?millas
+```
+<h4>Datos en Millas</h4>
+```{r}
+millas
+```
+<h4>Ejecutando codigo en R</h4>
+```{r}
+  2+7
+ (10 + 2) * 5
+```
+
+<h4>Asignación de Variables</h4>
+```{r}
+#Asignacion de variables
+a= 100
+b=50
+mivariable <- a+b
+mivariable #imprime el valor de la variable
+
+#Imprimiendo un valor al azar
+n <- 3 + rnorm(1)
+n
+
+#Listar los valores en memoria
+name <- "Carmen"; n1 <- 10; n2 <- 100; m <- 0.5
+ls()
+
+#Listar los valores en memoria con un patron en el nombre
+ls(pat = "m")
+
+ls.str(pat = "M")
+
+```
+
+<h4>Ayyuda en Línea</h4>
+```{r}
+?ls
+```
+
+
+<h4>Ejecutando codigo en R</h4>
+```{r}
+dput(millas)
+```
+
+<h4>Una plantilla de gráficos</h4>
+```{r}
+millas <- datos::millas
+ggplot(data = millas) +
+  geom_point(mapping = aes(x = motor, y = autopista))
+```
