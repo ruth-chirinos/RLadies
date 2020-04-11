@@ -15,7 +15,10 @@ library(tidyverse)
 
 Instalar el paquete de datos:
 ```{r}
-remotes::install_github("cienciadedatos/datos")
+# Opción 1
+library(datos)
+# opción 2
+# remotes::install_github("cienciadedatos/datos")
 ```
 Instalamos otros paquetes utilitarios
 
