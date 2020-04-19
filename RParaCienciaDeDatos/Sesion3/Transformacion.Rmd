@@ -1,0 +1,692 @@
+---
+title: "R-Ladies La Paz ' - Transformación de los Datos"
+output: html_notebook
+---
+Trainer: Ruth Chirinos
+
+
+<h1>5 Transformación de datos</h1>
+<h3>5.1.1 Prerequisitos</h3>
+```{r}
+#install.packages("dplyr")
+library(tidyverse)
+
+```
+
+<h3>5.1.2 vuelos </h3>
+```{r}
+?vuelos
+```
+
+Ver el tibble (data frame)
+```{r}
+View(vuelos)
+glimpse(vuelos)
+```
+
+<h2>5.2 Filtrar filas con filter()</h2>
+
+```{r}
+ene1 <- filter(vuelos, mes == 1, dia == 1)
+```
+
+```{r}
+(dic25 <- filter(vuelos, mes == 12, dia == 25))
+
+```
+</h3>5.2.1 Comparaciones</h3>
+Operadores de comparación:   >, >=, <, <=, != (no igual) y == (igual).
+
+```{r}
+filter(vuelos, mes == 1)
+#> Error: `mes` (`mes = 1`) must not be named, do you need `==`?
+```
+```{r}
+sqrt(2)^2 == 2
+#> [1] FALSE
+1 / 49 * 49 == 1
+#> [1] FALSE
+```
+Utiliza near para números de punto flotante
+```{r}
+near(sqrt(2)^2, 2)
+#> [1] TRUE
+near(1 / 49 * 49, 1)
+#> [1] TRUE
+```
+<h3>5.2.2 Operadores lógicos</h3>
+Operadores Booleanos: & es “y”, | es “o”, y ! es “no”
+```{r}
+filter(vuelos, mes == 11 | mes == 12)
+```
+
+```{r}
+nov_dic <- filter(vuelos, mes %in% c(11, 12))
+filter(vuelos, mes %in% c(11, 12))
+```
+
+```{r}
+filter(vuelos, !(atraso_llegada > 120 | atraso_salida > 120))
+filter(vuelos  , atraso_llegada <= 120, atraso_salida <= 120)
+```
+
+<h3>5.2.3 Valores faltantes</h3>
+```{r}
+NA > 5
+10 == NA
+NA + 10
+NA / 2
+```
+
+```{r}
+NA == NA
+```
+
+```{r}
+x <- NA
+# Sea y la edad de Juan. No sabemos qué edad tiene.
+y <- NA
+# ¿Tienen Juan y María la misma edad?
+x == y
+# ¡No sabemos!
+```
+
+Verificar si el error es NA
+```{r}
+is.na(x)
+#> [1] TRUE
+```
+<h3>5.2.4 Ejercicios</h3>
+Encuentra todos los vuelos que:
+
+Tuvieron un retraso de llegada de dos o más horas
+```{r}
+glimpse(vuelos)
+filter(vuelos, atraso_llegada >=2)
+```
+
+Volaron a Houston (IAH o HOU)
+```{r}
+filter(vuelos,destino=='IAH' | destino == 'HOU')
+```
+
+
+Fueron operados por United, American o Delta
+```{r}
+filter(vuelos, aerolinea=='UA' | aerolinea == 'AA' | aerolinea == 'DL'  )
+```
+
+
+Partieron en invierno (julio, agosto y septiembre)
+```{r}
+filter(vuelos, mes %in% c(7,8,9))
+```
+
+
+Llegaron más de dos horas tarde, pero no salieron tarde
+```{r}
+filter(vuelos, atraso_llegada >2)
+```
+
+
+Se retrasaron por lo menos una hora, pero repusieron más de 30 minutos en vuelo
+
+Partieron entre la medianoche y las 6 a.m. (incluyente)
+
+Otra función de dplyr que es útil para usar filtros es between(). ¿Qué hace? ¿Puedes usarla para simplificar el código necesario para responder a los desafíos anteriores?
+```{r}
+?between
+filter(vuelos,  between(horario_salida,000, 600))
+```
+
+¿Cuántos vuelos tienen datos faltantes en horario_salida? ¿Qué otras variables tienen valores faltantes? ¿Qué representan estas filas?
+
+¿Por qué NA ^ 0 no es faltante? ¿Por qué NA | TRUE no es faltante? ¿Por qué FALSE & NA no es faltante? ¿Puedes descubrir la regla general? (¡NA * 0 es un contraejemplo complicado!)
+
+
+<h2>5.3 Reordenar las filas con arrange()</h2>
+```{r}
+arrange(vuelos, anio, mes, dia)
+#> # A tibble: 336,776 x 19
+#>    anio   mes   dia horario_salida salida_programa… atraso_salida
+#>   <int> <int> <int>          <int>            <int>         <dbl>
+#> 1  2013     1     1            517              515             2
+#> 2  2013     1     1            533              529             4
+#> 3  2013     1     1            542              540             2
+#> 4  2013     1     1            544              545            -1
+#> 5  2013     1     1            554              600            -6
+#> 6  2013     1     1            554              558            -4
+#> # … with 336,770 more rows, and 13 more variables: horario_llegada <int>,
+#> #   llegada_programada <int>, atraso_llegada <dbl>, aerolinea <chr>,
+#> #   vuelo <int>, codigo_cola <chr>, origen <chr>, destino <chr>,
+#> #   tiempo_vuelo <dbl>, distancia <dbl>, hora <dbl>, minuto <dbl>,
+#> #   fecha_hora <dttm>
+```
+
+```{r}
+arrange(vuelos, desc(atraso_salida))
+#> # A tibble: 336,776 x 19
+#>    anio   mes   dia horario_salida salida_programa… atraso_salida
+#>   <int> <int> <int>          <int>            <int>         <dbl>
+#> 1  2013     1     9            641              900          1301
+#> 2  2013     6    15           1432             1935          1137
+#> 3  2013     1    10           1121             1635          1126
+#> 4  2013     9    20           1139             1845          1014
+#> 5  2013     7    22            845             1600          1005
+#> 6  2013     4    10           1100             1900           960
+#> # … with 336,770 more rows, and 13 more variables: horario_llegada <int>,
+#> #   llegada_programada <int>, atraso_llegada <dbl>, aerolinea <chr>,
+#> #   vuelo <int>, codigo_cola <chr>, origen <chr>, destino <chr>,
+#> #   tiempo_vuelo <dbl>, distancia <dbl>, hora <dbl>, minuto <dbl>,
+#> #   fecha_hora <dttm>
+```
+Los valores faltantes siempre se ordenan al final
+```{r}
+df <- tibble(x = c(5, 2, NA))
+arrange(df, x)
+#> # A tibble: 3 x 1
+#>       x
+#>   <dbl>
+#> 1     2
+#> 2     5
+#> 3    NA
+arrange(df, desc(x))
+#> # A tibble: 3 x 1
+#>       x
+#>   <dbl>
+#> 1     5
+#> 2     2
+#> 3    NA
+```
+
+<h3>5.3.1 Ejercicios</h3>
+¿Cómo podrías usar arrange() para ordenar todos los valores faltantes al comienzo? (Sugerencia: usa is.na()).
+```{r}
+arrange(df, !is.na(x))
+```
+
+
+Ordena vuelos para encontrar los vuelos más retrasados. Encuentra los vuelos que salieron más temprano.
+```{r}
+arrange(vuelos, desc(atraso_salida))
+arrange(vuelos, salida_programada)
+```
+
+
+Ordena vuelos para encontrar los vuelos más rápidos (que viajaron a mayor velocidad).
+```{r}
+arrange(vuelos, tiempo_vuelo)
+```
+
+
+¿Cuáles vuelos viajaron más lejos? ¿Cuál viajó más cerca?
+```{r}
+arrange(vuelos, desc(distancia))
+```
+<h2>5.4 Seleccionar columnas con select() </h2>
+```{r}
+# Seleccionar columnas por nombre
+select(vuelos, anio, mes, dia)
+#> # A tibble: 336,776 x 3
+#>    anio   mes   dia
+#>   <int> <int> <int>
+#> 1  2013     1     1
+#> 2  2013     1     1
+#> 3  2013     1     1
+#> 4  2013     1     1
+#> 5  2013     1     1
+#> 6  2013     1     1
+#> # … with 336,770 more rows
+# Seleccionar todas las columnas entre anio y dia (incluyente)
+select(vuelos, anio:dia)
+#> # A tibble: 336,776 x 3
+#>    anio   mes   dia
+#>   <int> <int> <int>
+#> 1  2013     1     1
+#> 2  2013     1     1
+#> 3  2013     1     1
+#> 4  2013     1     1
+#> 5  2013     1     1
+#> 6  2013     1     1
+#> # … with 336,770 more rows
+# Seleccionar todas las columnas excepto aquellas entre anio en dia (incluyente)
+select(vuelos, -(anio:dia))
+#> # A tibble: 336,776 x 16
+#>   horario_salida salida_programa… atraso_salida horario_llegada llegada_program…
+#>            <int>            <int>         <dbl>           <int>            <int>
+#> 1            517              515             2             830              819
+#> 2            533              529             4             850              830
+#> 3            542              540             2             923              850
+#> 4            544              545            -1            1004             1022
+#> 5            554              600            -6             812              837
+#> 6            554              558            -4             740              728
+#> # … with 336,770 more rows, and 11 more variables: atraso_llegada <dbl>,
+#> #   aerolinea <chr>, vuelo <int>, codigo_cola <chr>, origen <chr>,
+#> #   destino <chr>, tiempo_vuelo <dbl>, distancia <dbl>, hora <dbl>,
+#> #   minuto <dbl>, fecha_hora <dttm>
+```
+```{r}
+rename(vuelos, cola_num = codigo_cola)
+#> # A tibble: 336,776 x 19
+#>    anio   mes   dia horario_salida salida_programa… atraso_salida
+#>   <int> <int> <int>          <int>            <int>         <dbl>
+#> 1  2013     1     1            517              515             2
+#> 2  2013     1     1            533              529             4
+#> 3  2013     1     1            542              540             2
+#> 4  2013     1     1            544              545            -1
+#> 5  2013     1     1            554              600            -6
+#> 6  2013     1     1            554              558            -4
+#> # … with 336,770 more rows, and 13 more variables: horario_llegada <int>,
+#> #   llegada_programada <int>, atraso_llegada <dbl>, aerolinea <chr>,
+#> #   vuelo <int>, cola_num <chr>, origen <chr>, destino <chr>,
+#> #   tiempo_vuelo <dbl>, distancia <dbl>, hora <dbl>, minuto <dbl>,
+#> #   fecha_hora <dttm>
+```
+```{r}
+select(vuelos, fecha_hora, tiempo_vuelo, everything())
+#> # A tibble: 336,776 x 19
+#>   fecha_hora          tiempo_vuelo  anio   mes   dia horario_salida
+#>   <dttm>                     <dbl> <int> <int> <int>          <int>
+#> 1 2013-01-01 05:00:00          227  2013     1     1            517
+#> 2 2013-01-01 05:00:00          227  2013     1     1            533
+#> 3 2013-01-01 05:00:00          160  2013     1     1            542
+#> 4 2013-01-01 05:00:00          183  2013     1     1            544
+#> 5 2013-01-01 06:00:00          116  2013     1     1            554
+#> 6 2013-01-01 05:00:00          150  2013     1     1            554
+#> # … with 336,770 more rows, and 13 more variables: salida_programada <int>,
+#> #   atraso_salida <dbl>, horario_llegada <int>, llegada_programada <int>,
+#> #   atraso_llegada <dbl>, aerolinea <chr>, vuelo <int>, codigo_cola <chr>,
+#> #   origen <chr>, destino <chr>, distancia <dbl>, hora <dbl>, minuto <dbl>
+```
+```{r}
+select(vuelos, anio, anio, mes, mes)
+```
+
+<h2>5.5 Añadir nuevas variables con mutate()</h2>
+```{r}
+vuelos_sml <- select(vuelos,
+  anio:dia,
+  starts_with("atraso"),
+  distancia,
+  tiempo_vuelo
+)
+mutate(vuelos_sml,
+  ganancia = atraso_salida - atraso_llegada,
+  velocidad = distancia / tiempo_vuelo * 60
+)
+#> # A tibble: 336,776 x 9
+#>    anio   mes   dia atraso_salida atraso_llegada distancia tiempo_vuelo ganancia
+#>   <int> <int> <int>         <dbl>          <dbl>     <dbl>        <dbl>    <dbl>
+#> 1  2013     1     1             2             11      1400          227       -9
+#> 2  2013     1     1             4             20      1416          227      -16
+#> 3  2013     1     1             2             33      1089          160      -31
+#> 4  2013     1     1            -1            -18      1576          183       17
+#> 5  2013     1     1            -6            -25       762          116       19
+#> 6  2013     1     1            -4             12       719          150      -16
+#> # … with 336,770 more rows, and 1 more variable: velocidad <dbl>
+```
+
+```{r}
+mutate(vuelos_sml,
+  ganancia = atraso_salida - atraso_llegada,
+  horas = tiempo_vuelo / 60,
+  ganacia_por_hora = ganancia / horas
+)
+#> # A tibble: 336,776 x 10
+#>    anio   mes   dia atraso_salida atraso_llegada distancia tiempo_vuelo ganancia
+#>   <int> <int> <int>         <dbl>          <dbl>     <dbl>        <dbl>    <dbl>
+#> 1  2013     1     1             2             11      1400          227       -9
+#> 2  2013     1     1             4             20      1416          227      -16
+#> 3  2013     1     1             2             33      1089          160      -31
+#> 4  2013     1     1            -1            -18      1576          183       17
+#> 5  2013     1     1            -6            -25       762          116       19
+#> 6  2013     1     1            -4             12       719          150      -16
+#> # … with 336,770 more rows, and 2 more variables: horas <dbl>,
+#> #   ganacia_por_hora <dbl>
+```
+
+```{r}
+transmute(vuelos,
+  ganancia = atraso_salida - atraso_llegada,
+  horas = tiempo_vuelo / 60,
+  ganancia_por_hora = ganancia / horas
+)
+#> # A tibble: 336,776 x 3
+#>   ganancia horas ganancia_por_hora
+#>      <dbl> <dbl>             <dbl>
+#> 1       -9  3.78             -2.38
+#> 2      -16  3.78             -4.23
+#> 3      -31  2.67            -11.6 
+#> 4       17  3.05              5.57
+#> 5       19  1.93              9.83
+#> 6      -16  2.5              -6.4 
+#> # … with 336,770 more rows
+```
+<h3>5.5.1 Funciones de creación útiles</h3>
+```{r}
+transmute(vuelos,
+  horario_salida,
+  hora = horario_salida %/% 100,
+  minuto = horario_salida %% 100
+)
+#> # A tibble: 336,776 x 3
+#>   horario_salida  hora minuto
+#>            <int> <dbl>  <dbl>
+#> 1            517     5     17
+#> 2            533     5     33
+#> 3            542     5     42
+#> 4            544     5     44
+#> 5            554     5     54
+#> 6            554     5     54
+#> # … with 336,770 more rows
+```
+
+
+```{r}
+transmute(vuelos,
+  horario_salida,
+  hora = horario_salida %/% 100,
+  minuto = horario_salida %% 100
+)
+#> # A tibble: 336,776 x 3
+#>   horario_salida  hora minuto
+#>            <int> <dbl>  <dbl>
+#> 1            517     5     17
+#> 2            533     5     33
+#> 3            542     5     42
+#> 4            544     5     44
+#> 5            554     5     54
+#> 6            554     5     54
+#> # … with 336,770 more rows
+```
+```{r}
+(x <- 1:10)
+#>  [1]  1  2  3  4  5  6  7  8  9 10
+lag(x)
+#>  [1] NA  1  2  3  4  5  6  7  8  9
+lead(x)
+#>  [1]  2  3  4  5  6  7  8  9 10 NA
+```
+```{r}
+x
+#>  [1]  1  2  3  4  5  6  7  8  9 10
+cumsum(x)
+#>  [1]  1  3  6 10 15 21 28 36 45 55
+cummean(x)
+#>  [1] 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5
+```
+
+```{r}
+y <- c (1, 2, 2, NA, 3, 4)
+min_rank(y)
+#> [1]  1  2  2 NA  4  5
+min_rank(desc(y))
+#> [1]  5  3  3 NA  2  1
+```
+
+```{r}
+y <- c (1, 2, 2, NA, 3, 4)
+min_rank(y)
+#> [1]  1  2  2 NA  4  5
+min_rank(desc(y))
+#> [1]  5  3  3 NA  2  1
+```
+
+```{r}
+row_number(y)
+#> [1]  1  2  3 NA  4  5
+dense_rank(y)
+#> [1]  1  2  2 NA  3  4
+percent_rank(y)
+#> [1] 0.00 0.25 0.25   NA 0.75 1.00
+cume_dist(y)
+#> [1] 0.2 0.6 0.6  NA 0.8 1.0
+```
+
+<h2>5.6 Resúmenes agrupados con summarise()</h2>
+```{r}
+summarise(vuelos, atraso = mean(atraso_salida, na.rm = TRUE))
+#> # A tibble: 1 x 1
+#>   atraso
+#>    <dbl>
+#> 1   12.6
+```
+```{r}
+por_dia <- group_by(vuelos, anio, mes, dia)
+summarise(por_dia, atraso = mean(atraso_salida, na.rm = TRUE))
+```
+
+<h3>5.6.1 Combinación de múltiples operaciones con el pipe</h3>
+```{r}
+por_destino <- group_by(vuelos, destino)
+atraso <- summarise(por_destino,
+  conteo = n(),
+  distancia = mean(distancia, na.rm = TRUE),
+  atraso = mean(atraso_llegada, na.rm = TRUE)
+)
+atraso <- filter(atraso, conteo > 20, destino != "HNL")
+
+# Parece que las demoras aumentan con las distancias hasta ~ 750 millas
+# y luego disminuyen. ¿Tal vez a medida que los vuelos se hacen más 
+# largos, hay más habilidad para compensar las demoras en el aire?
+
+ggplot(data = atraso, mapping = aes(x = distancia, y = atraso)) +
+  geom_point(aes(size = conteo), alpha = 1/3) +
+  geom_smooth(se = FALSE)
+#> `geom_smooth()` using method = 'loess' and formula 'y ~ x'
+```
+
+
+```{r}
+atrasos <- vuelos %>% 
+  group_by(destino) %>% 
+  summarise(
+    conteo = n(),
+    distancia = mean(distancia, na.rm = TRUE),
+    atraso = mean(atraso_llegada, na.rm = TRUE)
+  ) %>% 
+  filter(conteo > 20, destino != "HNL")
+atrasos
+```
+
+<h3>5.6.2 Valores faltantes</h3>
+```{r}
+vuelos %>% 
+  group_by(anio, mes, dia) %>% 
+  summarise(mean = mean(atraso_salida))
+```
+
+```{r}
+vuelos %>% 
+  group_by(anio, mes, dia) %>% 
+  summarise(mean = mean(atraso_salida, na.rm = TRUE))
+```
+```{r}
+no_cancelados <- vuelos %>% 
+  filter(!is.na(atraso_salida), !is.na(atraso_llegada))
+
+no_cancelados %>% 
+  group_by(anio, mes, dia) %>% 
+  summarise(mean = mean(atraso_salida))
+```
+
+<h3>5.6.3 Conteos</h3>
+
+```{r}
+atrasos <- no_cancelados %>% 
+  group_by(codigo_cola) %>% 
+  summarise(
+   atraso = mean(atraso_llegada)
+  )
+
+ggplot(data = atrasos, mapping = aes(x = atraso)) + 
+  geom_freqpoly(binwidth = 10)
+```
+
+```{r}
+atrasos <- no_cancelados %>% 
+  group_by(codigo_cola) %>% 
+  summarise(
+    atraso = mean(atraso_llegada, na.rm = TRUE),
+    n = n()
+  )
+
+ggplot(data = atrasos, mapping = aes(x = n, y = atraso)) + 
+  geom_point(alpha = 1/10)
+```
+```{r}
+atrasos %>% 
+  filter(n > 25) %>% 
+  ggplot(mapping = aes(x = n, y = atraso)) + 
+    geom_point(alpha = 1/10)
+```
+
+
+```{r}
+# Convierte a tibble para puedas imprimirlo de una manera legible
+bateo <- as_tibble(datos::bateadores)
+
+rendimiento_bateadores <- bateo %>% 
+  group_by(id_jugador) %>% 
+  summarise(
+    pb = sum(golpes, na.rm = TRUE) / sum(al_bate, na.rm = TRUE),
+    ab = sum(al_bate, na.rm = TRUE)
+  )
+
+rendimiento_bateadores %>% 
+  filter(ab > 100) %>% 
+  ggplot(mapping = aes(x = ab, y = pb)) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+#> `geom_smooth()` using method = 'gam' and formula 'y ~ s(x, bs = "cs")'
+```
+
+```{r}
+rendimiento_bateadores %>% 
+  arrange(desc(pb))
+```
+
+<h3> 5.6.4 Funciones de resumen útiles </h3>
+```{r}
+no_cancelados %>% 
+  group_by(anio, mes, dia) %>% 
+  summarise(
+    prom_atraso1 = mean(atraso_llegada),
+    prom_atraso2 = mean(atraso_llegada[atraso_llegada > 0]) # el promedio de atrasos positivos
+  )
+```
+
+Medidas de dispersión: sd(x), IQR(x), mad(x). La raíz de la desviación media al cuadrado o desviación estándar sd(x) es una medida estándar de dispersión. El rango intercuartil IQR() y la desviación media absoluta mad(x) son medidas robustas equivalentes que pueden ser más útiles si tienes valores atípicos.
+```{r}
+# ¿Por qué la distancia a algunos destinos es más variable que la de otros?
+no_cancelados %>% 
+  group_by(destino) %>% 
+  summarise(distancia_sd = sd(distancia)) %>% 
+  arrange(desc(distancia_sd))
+```
+
+```{r}
+no_cancelados %>% 
+  group_by(anio, mes, dia) %>% 
+  summarise(
+    primero = min(horario_salida),
+    ultimo = max(horario_salida)
+  )
+```
+
+
+```{r}
+no_cancelados %>% 
+  group_by(anio, mes, dia) %>% 
+  summarise(
+    primera_salida = first(horario_salida), 
+    ultima_salida = last(horario_salida)
+  )
+```
+```{r}
+no_cancelados %>% 
+  group_by(anio, mes, dia) %>% 
+  mutate(r = min_rank(desc(horario_salida))) %>% 
+  filter(r %in% range(r))
+```
+
+Conteos: has visto n()
+```{r}
+# ¿Qué destinos tienen la mayoría de las aerolíneas?
+no_cancelados %>% 
+  group_by(destino) %>% 
+  summarise(aerolineas = n_distinct(aerolinea)) %>% 
+  arrange(desc(aerolineas))
+```
+
+```{r}
+no_cancelados %>% 
+  count(destino)
+```
+
+```{r}
+no_cancelados %>% 
+  count(codigo_cola, wt = distancia)
+```
+
+Obtener información de los vuelos más atrasones
+```{r}
+no_cancelados %>%
+  group_by(aerolinea, vuelo, destino) %>%
+  summarise(max_atrasos = max(atraso_salida), max_atrasos_llegada = max(atraso_llegada)) %>%
+  arrange(desc(max_atrasos), desc(max_atrasos_llegada)) 
+
+
+```
+```{r}
+# ¿Cuántos vuelos salieron antes de las 5 am? 
+# (estos generalmente son vuelos demorados del día anterior)
+no_cancelados %>% 
+  group_by(anio, mes, dia) %>% 
+  summarise(n_temprano = sum(horario_salida < 500))
+```
+
+```{r}
+# ¿Qué proporción de vuelos se retrasan más de una hora?
+no_cancelados %>% 
+  group_by(anio, mes, dia) %>% 
+  summarise(hora_prop = mean(atraso_llegada > 60))
+```
+<h3>5.6.5 Agrupación por múltiples variables</h3>
+```{r}
+diario <- group_by(vuelos, anio, mes, dia)
+(por_dia   <- summarise(diario, vuelos = n()))
+(por_mes <- summarise(por_dia, vuelos = sum(vuelos)))
+(por_anio  <- summarise(por_mes, vuelos = sum(vuelos)))
+
+```
+<h3>5.6.6 Desagrupar</h3>
+```{r}
+diario %>% 
+  ungroup() %>%             # ya no está agrupado por fecha
+  summarise(vuelos = n())   # todos los vuelos
+```
+
+<h2>5.7 Transformaciones agrupadas (y filtros)</h2>
+Encuentra los peores miembros de cada grupo:
+```{r}
+vuelos_sml %>% 
+  group_by(anio, mes, dia) %>%
+  filter(rank(desc(atraso_llegada)) < 10)
+```
+
+Encuentra todos los grupos más grandes que un determinado umbral:
+```{r}
+popular_destinos <- vuelos %>% 
+  group_by(destino) %>% 
+  filter(n() > 365)
+popular_destinos
+```
+Estandariza para calcular las métricas por grupo:
+```{r}
+popular_destinos %>% 
+  filter(atraso_llegada > 0) %>% 
+  mutate(prop_atraso = atraso_llegada / sum(atraso_llegada)) %>% 
+  select(anio:dia, destino, atraso_llegada, prop_atraso)
+```
+
