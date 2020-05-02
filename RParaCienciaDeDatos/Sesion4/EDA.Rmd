@@ -1,0 +1,376 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Trainer: Susana Yana Avila
+
+<h1> 7 Análisis exploratorio de datos (EDA) </h1>
+Cargar librerías
+```{r}
+library(tidyverse)
+library(datos)
+library(dplyr)
+```
+<h3>7.3.1 Visualizando distribuciones</h3>
+Para examinar la distribución de una variable categórica, usa un gráfico de barras:
+```{r}
+ggplot(data = diamantes)+
+  geom_bar(mapping = aes(x = corte))
+```
+Usando dplyr
+```{r}
+diamantes %>%
+count(corte)
+```
+Examinar estructura del dataset para ver la dimension, tipo de variables, 
+
+```{r}
+#?diamantes
+#view(diamantes)
+#glimpse(diamantes)
+#head
+#summary(diamantes)
+str(diamantes)
+```
+Para examinar la distribución de una variable continua, usa un histograma:
+```{r}
+?geom_histogram
+```
+```{r}
+ggplot(data = diamantes)+ 
+  geom_histogram(mapping = aes(x = quilate), binwidth =  0.5)
+```
+
+Puedes calcular esto manualmente combinando dplyr::count() y ggplot2::cut_width()
+```{r}
+diamantes %>%
+  count(cut_width(quilate,0.5))
+```
+Por ejemplo, así es como luce la gráfica anterior cuando acercamos la imagen a solo los diamantes con un tamaño menor a tres quilates y escogemos un intervalo más pequeño.
+
+```{r}
+pequenos <- diamantes %>%
+  filter(quilate < 3)
+ggplot(data = pequenos, mapping = aes(x = quilate))+
+  geom_histogram(binwidth = 0.1)
+```
+
+Si deseas sobreponer múltiples histogramas en la misma gráfica, te recomendamos usar geom_freqpoly() (del inglés polígonos de frecuencia) en lugar de geom_histogram()
+```{r}
+ggplot(data = pequenos, mapping = aes(x = quilate, colour = corte)) +
+  geom_freqpoly(binwidth = 0.1)
+```
+
+
+```{r}
+ggplot(data = pequenos, mapping = aes(x = quilate))+
+  geom_histogram(binwidth = 0.01)
+
+```
+
+El siguiente histograma muestra la duración (en minutos) de 272 erupciones del géiser Viejo Fiel (Old Faithful) en el Parque Nacional Yellowstone. 
+```{r}
+ggplot(data = fiel, mapping = aes(x = erupciones)) +
+  geom_histogram(binwidth = 0.25)
+```
+
+<h3>7.3.3 Valores inusuales</h3>
+Los valores atípicos, conocidos en inglés como outliers, son puntos en los datos que parecen no ajustarse al patrón. 
+```{r}
+ggplot(diamantes) +
+  geom_histogram(mapping = aes(x= y), binwidth = 0.5)
+```
+Para facilitar la tarea de visualizar valores inusuales, necesitamos acercar la imagen a los valores más pequeños del eje vertical con coord_cartesian():
+
+```{r}
+ggplot(diamantes)+
+  geom_histogram(mapping = aes(x = y), binwidth = 0.5)+
+  coord_cartesian(ylim = c(0,50))
+
+```
+Esto nos permite ver que hay tres valores inusuales: 0, ~30, y ~60. Podemos removerlos con dplyr:
+
+```{r}
+inusual <- diamantes %>%
+  filter(y < 3 | y > 30) %>%
+  select(precio, x, y, z) %>%
+  arrange(y)
+inusual
+```
+
+<h3>7.3.4 Ejercicios </h3>
+
+1. Explora la distribución de cada una de las variables x, y, y z
+en el set de datos diamantes. ¿Qué aprendiste? Piensa en un diamante y cómo decidirías qué dimensiones corresponden a la longitud, ancho y profundidad.
+```{r}
+ggplot(diamantes)+
+  geom_histogram(mapping = aes(x = x), binwidth = 0.1) +
+  coord_cartesian(ylim = c(0,20))
+ggplot(diamantes)+
+  geom_histogram(mapping =  aes(x = y), binwidth = 0.2) +
+  coord_cartesian(ylim = c(0,20))
+ggplot(diamantes)+
+  geom_histogram(mapping = aes(x = z), binwidth = 0.2) +
+  coord_cartesian(ylim = c(0,50))
+```
+
+```{r}
+?diamantes
+```
+Calcular esto manualmente combinando dplyr + count
+```{r}
+diamantes %>%
+  count(cut_width(x,0.5))
+diamantes %>%
+  count(cut_width(y,0.5))
+diamantes %>%
+  count(cut_width(z, 0.5))
+```
+Resp. El largo de los diamantes es común cuando los valores estan entre 4.25 mm  y 4.75 mm. El ancho de los diamantes e común cuando los valores estan entre 4.25 mm y 4.75 mm y los valores comúnes de profundidad estan entre  3.75 mm y 4.25 mm por lo tanto las dimensiones lo decido en base a los valores comúnes.
+
+2. Explora la distribución de precio. ¿Ves algo inusual o sorprendente? (Sugerencia: Piensa detenidamente en binwidth y asegúrate de usar un rango largo de valores.)
+```{r}
+ggplot(diamantes) + 
+  geom_histogram(mapping = aes(x = precio), binwidth = 100) 
+  #coord_cartesian(ylim = c(0, 350))
+```
+
+
+Resp. Con un ancho menor de las barras  (bin = 100) se observa 66 valores inusuales en el rango de 1450 a 1550 
+
+3. ¿Cuántos diamantes tienen 0.99 quilates? ¿Cuántos son de 1 quilate? ¿Qué piensas que puede ser la causa de dicha diferencia?
+
+```{r}
+ggplot(diamantes)+
+  geom_histogram(mapping = aes(x= quilate), binwidth = 0.2)
+```
+```{r}
+cantidad_99 <- diamantes %>%
+  filter(quilate == 0.99 )
+cantidad_99
+cantidad_1 <- diamantes %>%
+  filter(quilate == 1)
+cantidad_1
+ 
+```
+Resp. Existen 23 diamantes de 0.99 quilates y 1558 diamantes de 1 quilate. La difencia es por las dimensiones de los diamantes.
+
+4. Compara y contrasta coord_cartesian() contra xlim() o ylim() en cuanto a acercar la imagen en un histograma. ¿Qué pasa si no modificas el valor de binwidth? ¿Qué pasa si intentas acercar la imagen de manera que solo aparezca la mitad de una barra?
+```{r}
+ggplot(diamantes)+
+  geom_histogram(mapping = aes(x = quilate), binwidth = 0.01) +
+  coord_cartesian(xlim = c(0,5))
+ggplot(diamantes)+
+  geom_histogram(mapping = aes(x = quilate), binwidth = 0.01) +
+  coord_cartesian(ylim = c(0,5))
+ggplot(diamantes)+
+  geom_histogram(mapping = aes(x = quilate), binwidth = 0.01 ) #+
+  #coord_cartesian(xlim = c(0,50))
+```
+
+
+
+<h3> 7.4 Valores faltantes</h3>
+Desecha la fila completa donde están los valores inusuales:
+```{r}
+diamantes2 <- diamantes %>%
+  filter(between(y,3,20))
+diamantes2
+```
+Puedes usar la función ifelse() para reemplazar valores inusuales con NA:
+```{r}
+diamantes2 <- diamantes %>%
+  mutate(y = ifelse(y <3 | y > 20, NA, y))
+ggplot(diamantes2, mapping = aes(x = x, y = y)) +
+  geom_point()
+```
+
+```{r}
+diamantes2 <- diamantes %>%
+  mutate(y = ifelse(y <3 | y > 20, NA, y))
+ggplot(diamantes2, mapping = aes(x = x, y = y)) +
+  geom_point(na.rm = TRUE)
+```
+
+Para eliminar esa alerta, define na.rm = TRUE:
+```{r}
+ggplot(data = diamantes2, mapping = aes(x = x, y = y)) + 
+  geom_point(na.rm = TRUE)
+```
+
+Puedes hacer esto creando una nueva variable con is.na().
+```{r}
+datos::vuelos %>% 
+  mutate(
+    cancelados = is.na(horario_salida),
+    hora_programada = salida_programada %/% 100,
+    minuto_programado = salida_programada %% 100,
+    salida_programada = hora_programada + minuto_programado / 60
+  ) %>% 
+  ggplot(mapping = aes(salida_programada)) + 
+    geom_freqpoly(mapping = aes(colour = cancelados), binwidth = 1/4)
+```
+
+<h3>7.4.1 Ejercicios</h3>
+1. ¿Qué sucede con los valores faltantes en un histograma? ¿Qué pasa con los valores faltantes en una gráfica de barras? ¿Cuál es la razón detrás de esta diferencia?
+
+
+
+2. ¿Qué efecto tiene usar na.rm = TRUE en mean() (media) y sum()(suma)?
+Resp. Excluye a los valores faltantes en los resúmenes.
+
+<h3>7.5 Covariación</h3>
+<h3> 7.5.1 Una variable categórica y una variable continua </h3>
+Por ejemplo, exploremos cómo varía el precio dependiendo de la calidad de un diamante:
+
+```{r}
+ggplot(data = diamantes, mapping = aes(x = precio)) + 
+  geom_freqpoly(mapping = aes(colour = corte), binwidth = 500)
+```
+
+```{r}
+ggplot(diamantes) + 
+  geom_bar(mapping = aes(x = corte))
+```
+
+Mostrando densidad
+
+```{r}
+ggplot(data = diamantes, mapping = aes(x = precio, y = ..density..)) + 
+  geom_freqpoly(mapping = aes(colour = corte), binwidth = 500)
+```
+
+
+Veamos la distribución de la variable precio en relación con el corte usando geom_boxplot():
+
+```{r}
+ggplot(data = diamantes, mapping = aes(x = corte, y = precio)) +
+  geom_boxplot()
+```
+
+```{r}
+ggplot(data = millas, mapping = aes(x = clase, y = autopista)) +
+  geom_boxplot()
+```
+
+Usando reorder
+```{r}
+ggplot(data = millas) +
+  geom_boxplot(mapping = aes(x = reorder(clase, autopista, FUN = median), y = autopista))
+```
+
+Usando coord_flip()
+```{r}
+ggplot(data = millas) +
+  geom_boxplot(mapping = aes(x = reorder(clase, autopista, FUN = median), y = autopista)) +
+  coord_flip()
+```
+
+
+
+<h3>7.5.2 Dos variables categóricas</h3>
+```{r}
+ggplot(data = diamantes) +
+  geom_count(mapping = aes(x = corte, y = color))
+```
+
+Otra estrategia es calcular el recuento con dplyr:
+
+```{r}
+diamantes %>% 
+  count(color, corte)
+```
+
+Después podemos visualizar con geom_tile() y adaptar la estética de relleno (fill):
+
+```{r}
+diamantes %>% 
+  count(color, corte) %>%  
+  ggplot(mapping = aes(x = color, y = corte)) +
+    geom_tile(mapping = aes(fill = n))
+```
+
+
+<h3> 7.5.3 Dos variables continuas </h3>
+```{r}
+ggplot(data = diamantes) +
+  geom_point(mapping = aes(x = quilate, y = precio))
+```
+
+Alpha para agregar transparencia.
+
+```{r}
+ggplot(data = diamantes) + 
+  geom_point(mapping = aes(x = quilate, y = precio), alpha = 1 / 100)
+```
+
+```{r}
+#install.packages("hexbin")
+ggplot(data = pequenos) +
+  geom_bin2d(mapping = aes(x = quilate, y = precio))
+
+# install.packages("hexbin")
+ggplot(data = pequenos) +
+  geom_hex(mapping = aes(x = quilate, y = precio))
+```
+```{r}
+ggplot(data = pequenos, mapping = aes(x = quilate, y = precio)) + 
+  geom_boxplot(mapping = aes(group = cut_width(quilate, 0.1)))
+```
+
+
+```{r}
+ggplot(data = pequenos, mapping = aes(x = quilate, y = precio)) + 
+  geom_boxplot(mapping = aes(group = cut_number(quilate, 20)))
+```
+
+
+<h3>7.6 Patrones y modelos</h3>
+
+Un diagrama de dispersión de la duración de las erupciones del géiser Viejo Fiel contra el tiempo de espera entre erupciones muestra un patrón: tiempos de espera más largos están asociados con erupciones más largas. El diagrama de dispersión también muestra los dos grupos que identificamos antes.
+
+```{r}
+ggplot(data = faithful) +
+  geom_point(mapping = aes(x = eruptions, y = waiting))
+```
+
+```{r}
+library(modelr)
+mod <- lm(log(precio) ~ log(quilate), data = diamantes)
+
+diamantes2 <- diamantes %>% 
+  add_residuals(mod) %>% 
+  mutate(resid = exp(resid))
+
+ggplot(data = diamantes2) + 
+  geom_point(mapping = aes(x = quilate, y = resid))
+```
+
+Una vez que has removido la fuerte relación entre quilate y precio, puedes observar lo que esperarías sobre la relación entre corte y precio: los diamantes de mejor calidad son más costosos según su tamaño.
+```{r}
+ggplot(data = diamantes2) + 
+  geom_boxplot(mapping = aes(x = corte, y = resid))
+```
+
+<h3> 7.7 Argumentos en ggplot2</h3>
+```{r}
+ggplot(data = faithful, mapping = aes(x = eruptions)) +
+  geom_freqpoly(binwidth = 0.25)
+```
+
+```{r}
+ggplot(faithful, aes(eruptions)) +
+  geom_freqpoly(binwidth = 0.25)
+```
+
+```{r}
+diamantes %>% 
+  count(corte, claridad) %>% 
+  ggplot(aes(claridad, corte, fill = n)) + 
+    geom_tile()
+```
+
+```{r}
+#dim(diamantes)
+view(diamantes)
+```

@@ -1,0 +1,431 @@
+---
+title: "Manejar o Domar Datos - Parte I"
+output: html_notebook
+---
+Trainer: Ruth Chirinos
+
+
+# 10 Tibbles
+```{r}
+library(tidyverse)
+library(datos)
+```
+## 10.2 Creando tibbles
+Convertir un data frame a un tibble
+```{r}
+as_tibble(flores)
+```
+Se pueden crear tibbles 
+```{r}
+tibble(
+  x = 1:5,
+  y = 1,
+  z = x^2 + y
+)
+
+#Otro ejemplo con nombre de columnas
+tb <- tibble(
+  `:)` = "sonrisa",
+  ` ` = "espacio",
+  `2000` = "número"
+)
+tb
+```
+
+Usando tribble , es casi lo mismo que tibble pero transpuesto
+```{r}
+tribble(
+  ~x, ~y, ~z,
+  #--|--|----
+  "a", 2, 3.6,
+  "b", 1, 8.5
+)
+```
+
+## 10.3 Tibbles vs. data.frame
+### 10.3.1 Impresión en la consola
+```{r}
+tibble(
+  a = lubridate::now() + runif(1e3) * 86400,
+  b = lubridate::today() + runif(1e3) * 30,
+  c = 1:1e3,
+  d = runif(1e3),
+  e = sample(letters, 1e3, replace = TRUE)
+)
+```
+Los tibbles están diseñados para no inundar tu consola accidentalmente al mirar data frames muy grandes. Sin embargo, a veces es necesario un output mayor que el que se obtiene por defecto. Existen algunas opciones que pueden ayudar.
+
+```{r}
+datos::vuelos %>%
+  print(n = 10, width = Inf)
+
+#Otra forma
+datos::vuelos %>%
+  View()
+```
+### Otro ejemplo de cómo se muestra en CONSOLA
+#### Con tibble
+```{r}
+data(starwars)
+starwars
+```
+#### Con data.frame
+```{r}
+as.data.frame(starwars)
+```
+### 10.3.2 Selección de subconjuntos
+#### Con tibble
+```{r}
+miTibble <- tibble(x=1:5, y = c("La Paz", "Cochabamba", "Santa Cruz", "Chuquisaca", "Potosi"))
+miTibble
+miTibble[, 1:2]
+miTibble[, 1]
+miTibble$x
+```
+#### Con data.frame
+
+```{r}
+miDataFrame <- data.frame(x=1:5, y = c("La Paz", "Cochabamba", "Santa Cruz", "Chuquisaca", "Potosi"))
+miDataFrame[,1:2]
+# Aqui te muestra en vector
+miDataFrame[,1]
+as_tibble(miDataFrame)
+```
+
+# 11. Importación de Datos
+```{r}
+library(tidyverse)
+
+rLadiesForm <- read_csv("R-Ladies _ AprendamosJuntos.csv")
+```
+
+
+...sale un error , hay que limpiar cabeceras del documento que no son necesrias
+```{r}
+#Usando Skip
+ rLadiesForm <- read_csv("R-Ladies _ AprendamosJuntos.csv", skip = 7)
+
+#Usando comment
+rLadiesForm <- read_csv("R-Ladies _ AprendamosJuntos.csv", comment = '#')
+```
+
+Cuando el documento no tiene nombre de columnas :
+```{r}
+rLadiesForm <- read_csv("R-Ladies _ AprendamosJuntosWithoutColNames.csv", col_names = FALSE)
+rLadiesForm
+```
+
+
+### Puedes también definir un archivo CSV “en línea” (inline)
+```{r}
+
+read_csv("a,b,c
+1,2,3
+4,5,6")
+```
+
+```{r}
+read_csv("1,2,3\n4,5,6", col_names = FALSE)
+```
+```{r}
+read_csv("1,2,3\n4,5,6", col_names = c("x", "y", "z"))
+```
+```{r}
+read_csv("a,b,c\n1,2,.", na = ".")
+
+```
+
+## 11.3 Segmentar un vector
+```{r}
+str(parse_logical(c("TRUE", "FALSE", "NA")))
+
+str(parse_integer(c("1", "2", "3")))
+
+str(parse_date(c("2010-01-01", "1979-10-14")))
+
+```
+```{r}
+parse_integer(c("1", "231", ".", "456"), na = ".")
+#> [1]   1 231  NA 456
+```
+Si la segmentación falla, obtendrás una advertencia:
+```{r}
+x <- parse_integer(c("123", "345", "abc", "123.45"))
+# Y las fallas aparecerán como faltantes en el output: 
+```
+Si hay muchas fallas de segmentación, necesitarás utilizar problems() (del inglés problemas) para obtener la totalidad de ellas. Esto devuelve un tibble que puedes luego manipular con dplyr.
+
+```{r}
+problems(x)
+```
+
+### 11.3.1 Números
+```{r}
+parse_double("1.23")
+
+parse_double("1,23", locale = locale(decimal_mark = ","))
+
+parse_number("$100")
+
+parse_number("20%")
+
+parse_number("It cost $123.45")
+
+# Utilizado en América
+parse_number("$123,456,789")
+
+# Utilizado en muchas regiones de Europa
+parse_number("123.456.789", locale = locale(grouping_mark = "."))
+
+# Utilizado en Suiza
+parse_number("123'456'789", locale = locale(grouping_mark = "'"))
+
+
+```
+
+### 11.3.2 Cadenas de texto (strings)
+```{r}
+charToRaw("Hadley")
+#> [1] 48 61 64 6c 65 79
+```
+readr utiliza UTF-8 en todas partes: asume que tus datos están codificados en UTF-8 cuando los lee y lo emplea siempre cuando los escribe. Esta es una buena opción por defecto, pero fallará con datos producidos por sistemas más viejos que no entienden UTF-8. Si te sucede esto, tus cadenas de texto se verán extrañas cuando las imprimas en la consola. Algunas veces solo uno o dos caracteres estarán errados. Otras veces obtendrás un total jeroglífico. Por ejemplo:
+```{r}
+x1 <- "El Ni\xf1o was particularly bad this year"
+x2 <- "\x82\xb1\x82\xf1\x82\xc9\x82\xbf\x82\xcd"
+x1
+#> [1] "El Ni\xf1o was particularly bad this year"
+x2
+#> [1] "\x82\xb1\x82\xf1\x82ɂ\xbf\x82\xcd"
+```
+Para corregir el problema necesitas especificar la codificación en parse_character():
+```{r}
+parse_character(x1, locale = locale(encoding = "Latin1"))
+#> [1] "El Niño was particularly bad this year"
+parse_character(x2, locale = locale(encoding = "Shift-JIS"))
+#> [1] "こんにちは"
+```
+¿Cómo encontrar la codificación correcta? Si tienes suerte, estará incluida en alguna parte de la documentación de los datos. Desafortunadamente raras veces es ese el caso, así que readr provee la función guess_encoding() para ayudarte a adivinarla. 
+El primer argumento para guess_encoding() puede ser la ruta a un archivo o, como en este caso, un vector en bruto (útil si el texto ya se encuentra en R).
+```{r}
+guess_encoding(charToRaw(x1))
+#> # A tibble: 2 x 2
+#>   encoding   confidence
+#>   <chr>           <dbl>
+#> 1 ISO-8859-1       0.46
+#> 2 ISO-8859-9       0.23
+guess_encoding(charToRaw(x2))
+#> # A tibble: 1 x 2
+#>   encoding confidence
+#>   <chr>         <dbl>
+#> 1 KOI8-R         0.42
+```
+### 11.3.3 Factores
+R utiliza factores para representar las variables categóricas que tienen un conjunto conocido de valores posibles. Puedes darle a parse_factor() un vector de niveles conocidos (levels) para generar una advertencia cada vez que haya un valor inesperado:
+```{r}
+fruta <- c("manzana", "banana")
+parse_factor(c("manzana", "banana", "bananana"), levels = fruta)
+
+```
+### 11.3.4 Fechas, fechas-horas, y horas
+parse_datetime() asume una fecha-hora ISO8601
+```{r}
+parse_datetime("2010-10-01T2010")
+#> [1] "2010-10-01 20:10:00 UTC"
+# Si se omite la hora, será determinada como medianoche.
+parse_datetime("20101010")
+#> [1] "2010-10-10 UTC"
+```
+```{r}
+    library(hms)
+    parse_time("01:10 am")
+#> 01:10:00
+    parse_time("20:10:01")
+#> 20:10:01
+```
+```{r}
+parse_date("01/02/15", "%m/%d/%y")
+#> [1] "2015-01-02"
+parse_date("01/02/15", "%d/%m/%y")
+#> [1] "2015-02-01"
+parse_date("01/02/15", "%y/%m/%d")
+#> [1] "2001-02-15"
+```
+```{r}
+parse_date("1 janvier 2015", "%d %B %Y", locale = locale("fr"))
+#> [1] "2015-01-01"
+```
+## 11.4 Segmentar un archivo
+Cómo readr deduce automáticamente el tipo de cada columna.
+Cómo sobreescribir las especificaciones por defecto.
+### 11.4.1 Estrategia
+```{r}
+guess_parser("2010-10-01")
+#> [1] "date"
+guess_parser("15:01")
+#> [1] "time"
+guess_parser(c("TRUE", "FALSE"))
+#> [1] "logical"
+guess_parser(c("1", "5", "9"))
+#> [1] "double"
+guess_parser(c("12,352,561"))
+#> [1] "number"
+str(parse_guess("2010-10-10"))
+#>  Date[1:1], format: "2010-10-10"
+```
+### 11.4.2 Problemas
+No siempre funciona por :
+1. El file podria tener muchos archivos
+2. Podria existir muchos valores NA
+
+Probemos el archivo desafio de read_csv:
+```{r}
+desafio <- read_csv(readr_example("challenge.csv"))
+```
+Extrayendo valores con problems
+```{r}
+problems(desafio)
+```
+
+```{r}
+tail(desafio)
+```
+Esto sugiere que mejor sería utilizar un segmentador de fechas. Para arreglar este problema, copia y pega la especificación de las columnas que habías obtenido inicialmente y agrégalas a tu código:
+```{r}
+desafio <- read_csv(
+  readr_example("challenge.csv"), 
+  col_types = cols(
+    x = col_double(),
+    y = col_logical()
+  )
+)
+
+
+desafio <- read_csv(
+  readr_example("challenge.csv"), 
+  col_types = cols(
+    x = col_double(),
+    y = col_date()
+  )
+)
+
+
+tail(desafio)
+```
+### 11.4.3 Otras estrategias
+En el ejemplo previo simplemente tuvimos mala suerta: si miramos solo una fila más que el número por defecto, podemos segmentar correctamente en un solo intento:
+```{r}
+desafio2 <- read_csv(readr_example("challenge.csv"), guess_max = 1001)
+
+desafio2
+```
+Algunas veces es más fácil diagnosticar problemas si lees todas las columnas como vectores de caracteres:
+
+```{r}
+desafio <- read_csv(readr_example("challenge.csv"), 
+  col_types = cols(.default = col_character())
+)
+
+desafio
+```
+
+Esto es particularmente útil en combinación con ‘type_convert()’, que aplica la heurística de segmentación a las columnas de caracteres en un data frame.
+
+```{r}
+  df <- tribble(
+    ~x,  ~y,
+    "1", "1.21",
+    "2", "2.32",
+    "3", "4.56"
+  )
+  df
+#> # A tibble: 3 x 2
+#>   x     y    
+#>   <chr> <chr>
+#> 1 1     1.21 
+#> 2 2     2.32 
+#> 3 3     4.56
+
+# Fíjate en los tipos de columna
+type_convert(df)
+#> Parsed with column specification:
+#> cols(
+#>   x = col_double(),
+#>   y = col_double()
+#> )
+#> # A tibble: 3 x 2
+#>       x     y
+#>   <dbl> <dbl>
+#> 1     1  1.21
+#> 2     2  2.32
+#> 3     3  4.56
+```
+
+
+## Super PLUS!! Conectandote a Base de Datos
+```{r}
+install.packages("RMySQL")
+# install.packages("odbc")
+library(RMySQL)
+odbc::odbcListDrivers()
+mysqlconnection <- DBI::dbConnect(odbc::odbc(),
+                      Driver   = "MySQL ODBC 8.0 Driver",
+                      Server   = "db4free.net",
+                      Database = "rladieslapaz", 
+                      UID      = rstudioapi::askForPassword("Database user"),
+                      PWD      = rstudioapi::askForPassword("Database password"),
+                      Port     = 3306)
+
+result <- dbSendQuery(mysqlconnection, "select * from USUARIOS")
+data.frame=dbFetch(result, n = 100)
+print(data.frame)
+
+```
+
+## 11.5 Escribir a un archivo
+
+- Codificar siempre las cadenas de caracteres en UTF-8.
+- Guardar fechas y fechas-horas en formato ISO8601, por lo que son fácilmente segmentadas en cualquier sitio.
+
+```{r}
+write_csv(desafio, "desafio.csv")
+```
+Esto hace a los CSV poco confiables para almacenar en caché los resultados provisorios — necesitas recrear la especificación de las columnas cada vez que los cargas. Hay dos alternativas:
+
+A. write_rds() and read_rds() son funciones “envoltorio” (wrappers) uniformes sobre las funciones base readRDS() y saveRDS(). Estas almacenan datos en un formato binario propio de R llamado RDS:
+```{r}
+write_rds(desafio, "desafio.rds")
+read_rds("desafio.rds")
+#> # A tibble: 2,000 x 2
+#>   x     y    
+#>   <chr> <chr>
+#> 1 404   <NA> 
+#> 2 4172  <NA> 
+#> 3 3004  <NA> 
+#> 4 787   <NA> 
+#> 5 37    <NA> 
+#> 6 2332  <NA> 
+#> # … with 1,994 more rows
+```
+B. El paquete feather implementa un formato rápido de archivos binarios que puede compartirse a través de lenguajes de programación:
+```{r}
+#install.packages(feather)
+library(feather)
+write_feather(desafio, "desafio.feather")
+read_feather("desafio.feather")
+#> # A tibble: 2,000 x 2
+#>       x      y
+#>   <dbl> <date>
+#> 1   404   <NA>
+#> 2  4172   <NA>
+#> 3  3004   <NA>
+#> 4   787   <NA>
+#> 5    37   <NA>
+#> 6  2332   <NA>
+#> # ... with 1,994 more rows
+```
+
+
+## 11.6 Otros tipos de datos
+- haven lee archivos SPSS, Stata y SAS.
+- readxl lee archivos excel (tanto .xls como .xlsx).
+- DBI, junto con un backend de base de datos específico (e.g. RMySQL, RSQLite, RPostgreSQL, etc.) te permite correr consultas SQL contra una base de datos y devolver un data frame.
