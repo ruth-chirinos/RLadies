@@ -1,0 +1,175 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Trainer: Susana Yana Avila
+
+<h1> 13 Datos relacionales </h1>
+```{r}
+library(tidyverse)
+library(datos)
+library(dplyr)
+```
+
+<h3>13.2 Datos sobre vuelos<h/h3>
+```{r}
+# aerolineas permite observar el nombre completo de la aerolínea a partir de su código abreviado:
+aerolineas
+# aeropuertos entrega información de cada aeropuerto, identificado por su código:
+aeropuertos
+# aviones entrega información de cada avión, identificado por su codigo_cola:
+aviones
+# clima entrega información del clima en cada aeropuerto de Nueva York para cada hora:
+clima
+# 
+vuelos
+```
+
+<h3>13.3 Claves</h3>
+```{r}
+# Identificar clave primaria
+aviones %>%
+  count(codigo_cola) %>%
+  filter(n > 1)
+clima %>%
+  count(anio, mes, dia, hora, origen) %>%
+  filter(n > 1)
+# 
+vuelos %>%
+  count(anio, mes, dia, vuelo) %>%
+  filter(n > 1)
+vuelos %>%
+  count(anio, mes, dia, codigo_cola) %>%
+  filter(n > 1)
+```
+
+<h3> 13.4 Uniones de transformación </h3>
+```{r}
+#View(vuelos)
+# seleccionar variables
+(vuelos2 <- vuelos %>%
+  select(anio:dia, hora, origen, destino, codigo_cola, aerolinea))
+# combinar los datos de aerolinas y vuelos2 con left_join() (union_izquierda):
+vuelos2 %>%
+  select(-origen, -destino) %>%
+  left_join(aerolineas, by = "aerolinea")
+vuelos2 %>%
+  select(-origen, -destino) %>%
+  mutate(nombre = aerolineas$nombre[match(aerolinea, aerolineas$aerolinea)])
+```
+<h3>13.4.1 Entendiendo las uniones</h3>
+
+```{r}
+(x <- tribble(
+  ~key, ~val_x,
+  1, "x1",
+  2, "x2",
+  3, "x3"
+))
+(y <- tribble(
+  ~key, ~val_y,
+  1, "y1",
+  2, "y2",
+  4, "y3"
+))
+```
+
+<h3>13.4.2 Unión interior</h3>
+```{r}
+x%>%
+  inner_join(y, by = "key")
+```
+
+<h3>13.4.3 Uniones exteriores</h3>
+```{r}
+x%>%
+  left_join(y, by = "key")
+x%>%
+  right_join(y, by = "key")
+x%>%
+  full_join(y, by = "key")
+```
+<h3>13.4.4 Claves duplicadas</h3>
+```{r}
+# Una tabla tiene claves duplicadas.
+(x <- tribble(
+ ~key, ~val_x,
+ 1, "x1",
+ 2, "x2",
+ 2, "x3",
+ 1, "x4"
+))
+(y <- tribble(
+ ~key, ~val_y,
+ 1, "y1",
+ 2, "y2"
+))
+left_join(x, y, by = "key")
+# Ambas tablas tienen claves duplicadas.
+ ( x <- tribble(
+ ~key, ~val_x,
+ 1, "x1",
+ 2, "x2",
+ 2, "x3",
+ 3, "x4"
+  ))
+ ( y <- tribble(
+ ~key, ~val_y,
+ 1, "y1",
+ 2, "y2",
+ 2, "y3",
+ 3, "y4"
+  ))
+  left_join(x, y, by = "key")
+```
+
+<h3> 13.4.5 Definiendo las columnas clave</h3>
+```{r}
+# Unión por defecto, by = NULL
+vuelos2 %>%
+ left_join(clima)
+# Un vector de caracteres, by = "x"
+vuelos2 %>%
+ left_join(aviones, by = "codigo_cola")
+vuelos2 %>%
+ left_join(aeropuertos, c("origen" = "codigo_aeropuerto"))
+vuelos2 %>%
+ left_join(aeropuertos, c("destino" = "codigo_aeropuerto"))
+```
+
+<h3>13.4.7 Otras implementaciones</h3>
+<h3>13.5 Uniones de filtro</h3>
+```{r}
+#merge(vuelos, aeropuertos)
+(destinos_populares <- vuelos %>%
+  count(destino, sort = TRUE) %>%
+  head(10))
+(destinos_populares <- vuelos %>%
+  count(destino, sort = TRUE) %>%
+  head(10))
+
+(vuelos %>%
+  semi_join(destinos_populares))
+```
+<h3> 13.7 Operaciones de conjuntos </h3>
+```{r}
+(df1 <- tribble(
+  ~x, ~y,
+  1, 1,
+  2, 1)
+)
+(df2 <- tribble(
+  ~x, ~y,
+  1, 1,
+  1, 2)
+)
+#Las cuatro posibilidades son:
+
+
+intersect(df1, df2)
+union(df1, df2)
+setdiff(df1, df2)
+
+setdiff(df2, df1)
+```
+

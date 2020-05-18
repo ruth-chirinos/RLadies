@@ -1,0 +1,315 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Trainer: Susana Yana Avila
+
+<h1> 14 Cadenas de caracteres </h1>
+```{r}
+#cargar librerías
+library(tidyverse)
+library(datos)
+library(stringr)
+```
+<h3> 14.2 Cadenas: elementos básicos </h3>
+```{r}
+(string1 <- "Esta es una cadena de caracteres")
+(string2 <- 'Si quiero incluir "comillas" dentro de la cadena, uso comillas simples')
+x <- c("\"", "\\")
+x
+writeLines(x)
+#?'"'
+x <- "\u00b5"
+x
+# Vector de caracteres
+c("uno", "dos", "tres")
+```
+
+<h3> 14.2.1 Largo de cadena </h3>
+```{r}
+str_length(c("a", "R para Ciencia de Datos", NA))
+```
+
+<h3> 14.2.2 Combinar cadenas</h3>
+```{r}
+# con la función str_c
+str_c("x", "y")
+str_c("x", "y", "z")
+# separar cadenas
+str_c("x", "y", sep = ", ")
+# para imprimir  "NA"
+x <- c("abc", NA)
+str_c("|-", x, "-|")
+str_c("|-", str_replace_na(x), "-|")
+
+str_c("prefijo-", c("a", "b", "c"), "-sufijo")
+
+# 
+nombre <- "Hadley"
+hora_del_dia <- "mañana"
+cumpleanios <- FALSE
+
+str_c(
+  "Que tengas una buena ", hora_del_dia, ", ", nombre,
+  if (cumpleanios) " y ¡FELIZ CUMPLEAÑOS!",
+  "."
+)
+#
+str_c(c("x", "y", "z"), collapse = ", ")
+```
+
+<h3> 14.2.3 Dividir cadenas </h3>
+```{r}
+x <- c("Manzana", "Plátano", "Pera")
+str_sub(x, 1, 3)
+# los números negativos cuentan de manera invertida desde el final
+str_sub(x, -3, -1)
+# con cadena corta
+str_sub("a", 1, 5)
+# modificar una cadena
+str_sub(x, 1, 1) <- str_to_lower(str_sub(x, 1, 1))
+x
+```
+
+<h3> 14.2.4 Locales </h3>
+```{r}
+# La lengua turca tiene dos i: una con punto y otra sin punto
+# Tienen diferentes reglas para convertirlas en mayúsculas
+
+str_to_upper(c("i", "ı"))
+str_to_upper(c("i", "ı"), locale = "tr")
+#
+x <- c("arándano", "espinaca", "banana")
+
+str_sort(x, locale = "es")  # Español
+
+str_sort(x, locale = "haw") # Hawaiano
+
+```
+
+<h3> 14.2.6 Buscar coincidencia de patrones con expresiones regulares </h3>
+<h3> 14.2.7 Coincidencias básicas</h3>
+```{r}
+# coincidencias con cadenas exactas
+x <- c("manzana", "banana", "pera")
+str_view(x, "an")
+# coincide con cualquier caracter (excepto un salto de línea)
+str_view(x, ".a.")
+# Para crear una expresión regular necesitamos \\
+punto <- "\\."
+
+# Pero la expresión en sí misma solo contiene una \
+writeLines(punto)
+
+# Esto le dice a R que busque el . de manera explícita
+str_view(c("abc", "a.c", "bef"), "a\\.c")
+
+x <- "a\\b"
+writeLines(x)
+
+str_view(x, "\\\\")
+```
+<h3> 14.2.8 Anclas </h3>
+```{r}
+#^ para buscar la coincidencia al inicio de la cadena.
+#$ para buscar la coincidencia al final de la cadena.
+x <- c("arándano", "banana", "pera")
+str_view(x, "^a")
+#
+str_view(x, "a$")
+#para forzar que una expresión regular coincida con una cadena completa, ánclala usando tanto ^ como $:
+
+x <- c("pie de manzana", "manzana", "queque de manzana")
+str_view(x, "manzana")
+str_view(x, "^manzana$")
+```
+<h3> 14.2.9 Clases de caracteres y alternativas</h3>
+
+```{r}
+# Buscar de forma literal un caracter que usualmente tiene un significado especial en una expresión regular
+str_view(c("abc", "a.c", "a*c", "a c"), "a[.]c")
+str_view(c("abc", "a.c", "a*c", "a c"), ".[*]c")
+str_view(c("abc", "a.c", "a*c", "a c"), "a[ ]")
+
+str_view(c("cómo", "como"), "c(ó|o)mo")
+```
+<h3> 14.2.10 Repetición </h3>
+```{r}
+#?: 0 o 1
+#+: 1 o más
+#*: 0 o más
+x <- "1888 es el año más largo en números romanos: MDCCCLXXXVIII"
+str_view(x, "CC?")
+str_view(x, "CC+")
+str_view(x, 'C[LX]+')
+
+# especificar el número de coincidencias que quieres encontrar de manera precisa:
+#{n}: exactamente n
+#{n,}: n o más
+#{,m}: no más de m
+#{n,m}: entre n y m
+str_view(x, "C{2}")
+str_view(x, "C{2,}")
+str_view(x, "C{2,3}")
+#
+str_view(x, 'C{2,3}?')
+str_view(x, 'C[LX]+?')
+```
+<h3> 14.2.11 Agrupamiento y referencias previas <h3>
+```{r}
+# la siguiente expresión regular busca todas las frutas que tengan un par de letras repetido.
+str_view(frutas, "(..)\\1", match = TRUE)
+```
+<h3> 14.3.1 Detectar coincidencias </h3>
+```{r}
+# Usar e sum() (suma) y mean() (media) para  responder preguntas sobre coincidencias a lo largo de un vector más extenso
+# Este devuelve un vector lógico del mismo largo que el input:
+x <- c("manzana", "plátano", "pera")
+str_detect(x, "e")
+# ¿Cuántas palabras comunes empiezan con m?
+sum(str_detect(palabras, "^m"))
+# ¿Qué proporción de palabras comunes terminan con una vocal?
+mean(str_detect(palabras, "[aáeéiéoéuú]$"))
+
+# Encuentra todas las palabras que contengan al menos una vocal, y luego niégalo
+sin_vocales_1 <- !str_detect(palabras, "[aáeéiíoóuúúü]")
+# Encuentra todas las palabras consistentes solo en consonantes (no vocales)
+sin_vocales_2 <- str_detect(palabras, "^[^aáeéiíoóuúúü]+$")
+identical(sin_vocales_1, sin_vocales_2)
+
+palabras[str_detect(palabras, "x$")]
+
+str_subset(palabras, "x$")
+# cadenas de caracteres sean una columna de un data frame y que prefieras utilizar la función filter() (filtrar):
+(df <- tibble(
+  palabra = palabras, 
+  i = seq_along(palabra)
+))
+df %>% 
+  filter(str_detect(palabras, "x$"))
+#  str_detect() es str_count() (count = contar)
+
+x <- c("manzana", "plátano", "pera")
+str_count(x, "a")
+mean(str_count(palabras, "[aáeéiíoóuúü]"))
+
+(df %>% 
+  mutate(
+    vocales = str_count(palabra, "[aáeéiíoóuúü]"),
+    consonantes = str_count(palabra, "[^aáeéiíoóuúü]")
+  ))
+str_count("abababa", "aba")
+
+str_view_all("abababa", "aba")
+``` 
+
+
+
+<h3> 14.3.3 Extraer coincidencias</h3>
+```{r}
+length(oraciones)
+head(oraciones)
+colores <- c("rojo", "amarillo", "verde", "azul", "marrón")
+coincidencia_color <- str_c(colores, collapse = "|")
+coincidencia_color
+# con una coincidencia
+tiene_color <- str_subset(oraciones, coincidencia_color)
+coincidencia <- str_extract(tiene_color, coincidencia_color)
+head(coincidencia)
+# con mas de una coincidencia
+mas <- oraciones[str_count(oraciones, coincidencia_color) > 1]
+str_view_all(mas, coincidencia_color)
+
+#
+str_extract(mas, coincidencia_color)
+str_extract_all(mas, coincidencia_color)
+
+str_extract_all(mas, coincidencia_color, simplify = TRUE)
+
+x <- c("a", "a b", "a b c")
+str_extract_all(x, "[a-z]", simplify = TRUE)
+```
+<h3> 14.3.4 Coincidencias agrupadas </h3>
+```{r}
+sustantivo <- "(el|la|los|las|lo|un|una|unos|unas) ([^ ]+)"
+
+tiene_sustantivo <- oraciones %>%
+  str_subset(sustantivo) %>%
+  head(10)
+tiene_sustantivo %>% 
+  str_extract(sustantivo)
+# 
+tiene_sustantivo %>% 
+  str_match(sustantivo)
+# 
+tibble(oracion = oraciones) %>% 
+  tidyr::extract(
+    oracion, c("articulo", "sustantivo"), "(el|la|los|las|un|una|unos|unas) ([^ ]+)", 
+    remove = FALSE
+  )
+```
+<h3> 14.3.5 Remplazar coincidencias </h3>
+```{r}
+x <- c("manzana", "pera", "banana")
+str_replace(x, "[aeiou]", "-")
+str_replace_all(x, "[aeiou]", "-")
+#con str_replace_all() puedes realizar múltiples remplazos a través de un vector cuyos elementos tiene nombre (named vector):
+x <- c("1 casa", "2 autos", "3 personas")
+str_replace_all(x, c("1" = "una", "2" = "dos", "3" = "tres"))
+# 
+oraciones %>% 
+  str_replace("([^ ]+) ([^ ]+) ([^ ]+)", "\\1 \\3 \\2") %>% 
+  head(5)
+```
+<h3> 14.3.6 Divisiones </h3>
+```{r}
+oraciones %>%
+  head(5) %>% 
+  str_split(" ")
+# 
+"a|b|c|d" %>% 
+  str_split("\\|") %>% 
+  .[[1]]
+# 
+oraciones %>%
+  head(5) %>% 
+  str_split(" ", simplify = TRUE)
+# 
+campos <- c("Nombre: Hadley", "País: NZ", "Edad: 35")
+campos %>% str_split(": ", n = 2, simplify = TRUE)
+# 
+x <- "Esta es una oración. Esta es otra oración."
+str_view_all(x, boundary("word"))
+
+str_split(x, " ")[[1]]
+
+str_split(x, boundary("word"))[[1]]
+```
+<h3> 4.4 Otro tipo de patrones </h3>
+```{r}
+# La manera regular en que escribimos el patrón
+str_view(frutas, "nana")
+str_view(frutas, regex("nana"))
+bananas <- c("banana", "Banana", "BANANA")
+str_view(bananas, "banana")
+str_view(bananas, regex("banana", ignore_case = TRUE))
+# 
+x <- "Línea 1\nLínea 2\nLínea 3"
+str_extract_all(x, "^Línea")[[1]]
+str_extract_all(x, regex("^Línea", multiline = TRUE))[[1]]
+# 
+telefono <- regex("
+  \\(?     # paréntesis inicial opcional
+  (\\d{3}) # código de área
+  [) -]?   # paréntesis, espacio o guión inicial opcional
+  (\\d{3}) # otros tres números
+  [ -]?    # espacio o guión opcional
+  (\\d{3}) # otros tres números
+  ", comments = TRUE)
+
+str_match("514-791-8141", telefono)
+```
+
+
+
+

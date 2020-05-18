@@ -1,0 +1,170 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Trainer: Susana Yana Avila
+
+<h1> 15 Factores</h1>
+
+```{r}
+library(tidyverse)
+library(datos)
+library(forcats)
+```
+<h3> 15.2 Creando factores </h3>
+```{r}
+# con vector de cadenas
+x1 <- c("Dic", "Abr", "Ene", "Mar")
+x2 <- c("Dic", "Abr", "Eme", "Mar")
+sort(x1)
+# con fanctores
+niveles_meses <- c(
+  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+)
+y1 <- factor(x1, levels = niveles_meses)
+y1
+sort(y1)
+# 
+y2 <- factor(x2, levels = niveles_meses)
+y2
+# ver advertencias
+y2 <- parse_factor(x2, levels = niveles_meses)
+factor(x1)
+# 
+f1 <- factor(x1, levels = unique(x1))
+f1
+f2 <- x1 %>% factor() %>% fct_inorder()
+f2
+levels(f2)
+```
+
+<h3> 15.3 Encuesta Social General</h3>
+```{r}
+encuesta
+#View(encuesta)
+glimpse(encuesta)
+#summary(encuesta)
+```
+
+
+```{r}
+#?encuesta
+# contar factores
+encuesta %>%
+  count(raza)
+ggplot(encuesta, aes(raza))+
+  geom_bar()
+# mostrar con valores perdidos
+ggplot(encuesta, aes(raza))+
+  geom_bar()+
+  scale_x_discrete(drop = FALSE)
+```
+
+<h3> 15.4 Modificar el orden de los factores </h3>
+```{r}
+#explorar el número promedio de horas consumidas mirando televisión por día, para cada religión:
+resumen_religion <- encuesta %>%
+  group_by(religion) %>%
+  summarise(
+    edad = mean(edad, na.rm = TRUE),
+    horas_tv = mean(horas_tv, na.rm = TRUE),
+    n = n()
+  )
+
+ggplot(resumen_religion, aes(horas_tv, religion)) + geom_point()
+# reordenar factores
+ggplot(resumen_religion, aes(horas_tv, fct_reorder(religion, horas_tv))) +
+  geom_point()
+# reordenar factotes pero con mutate
+resumen_religion %>%
+  mutate(religion = fct_reorder(religion, horas_tv)) %>%
+  ggplot(aes(horas_tv, religion)) +
+  geom_point()
+```
+
+
+```{r}
+#¿Qué sucede si creamos un gráfico para observar cómo varía la edad promedio para cada ingreso reportado?
+# No es bueno usar arbitrariamente factores tal cual muestra el ejemplo siguiente:
+resumen_ingreso <- encuesta %>%
+  group_by(ingreso) %>%
+  summarise(
+    edad = mean(edad, na.rm = TRUE),
+    horas_tv = mean(horas_tv, na.rm = TRUE),
+    n = n()
+  )
+
+ggplot(resumen_ingreso, aes(edad, fct_reorder(ingreso, edad))) + geom_point()
+# cambiar niveles
+ggplot(resumen_ingreso, aes(edad, fct_relevel(ingreso, "No aplica"))) +
+  geom_point()
+
+# fct_reorder2() reordena el factor mediante los valores y asociados con los valores x más grandes
+por_edad <- encuesta %>%
+  filter(!is.na(edad)) %>%
+  count(edad, estado_civil) %>%
+  group_by(edad) %>%
+  mutate(prop = n / sum(n))
+
+ggplot(por_edad, aes(edad, prop, colour = estado_civil)) +
+  geom_line(na.rm = TRUE)
+
+ggplot(por_edad, aes(edad, prop, colour = fct_reorder2(estado_civil, edad, prop))) +
+  geom_line() +
+  labs(colour = "estado_civil")
+# fct_infreq() frecuencia incremental de factores, fct_rev() invertir factores
+encuesta %>%
+  mutate(estado_civil = estado_civil %>% fct_infreq() %>% fct_rev()) %>%
+  ggplot(aes(estado_civil)) +
+  geom_bar()
+``` 
+
+<h3>15.5 Modificar los niveles de los factores </h3>
+```{r}
+# recodificar factores
+encuesta %>% count(partido)
+# fct_recode() -> recodificar factores
+encuesta %>%
+  mutate(partido = fct_recode(partido,
+    "Republicano duro" = "Fuertemente republicano",
+    "Republicano moderado" = "No fuertemente republicano",
+    "Independiente pro republicano" = "Ind, pro rep",
+    "Independiente pro demócrata" = "Ind, pro dem",
+    "Demócrata moderado" = "No fuertemente demócrata",
+    "Demócrata duro" = "Fuertemente demócrata"
+  )) %>%
+  count(partido)
+
+encuesta %>%
+  mutate(partido = fct_recode(partido,
+    "Republicano duro" = "Fuertemente republicano",
+    "Republicano moderado" = "No fuertemente republicano",
+    "Independiente pro republicano" = "Ind, pro rep",
+    "Independiente pro demócrata" = "Ind, pro dem",
+    "Demócrata moderado" = "No fuertemente demócrata",
+    "Demócrata duro" = "Fuertemente demócrata",
+    "Otro" = "Sin respuesta",
+    "Otro" = "No sabe",
+    "Otro" = "Otro partido"
+  )) %>%
+  count(partido)
+# fct_collapse() -> colapsar factores
+encuesta %>%
+  mutate(partido = fct_collapse(partido,
+    otro = c("Sin respuesta", "No sabe", "Otro partido"),
+    republicano = c("Fuertemente republicano", "No fuertemente republicano"),
+    independiente = c("Ind, pro rep", "Independiente", "Ind, pro dem"),
+    democrata = c("No fuertemente demócrata", "Fuertemente demócrata")
+  )) %>%
+  count(partido)
+# fct_lump() -> agrupar factores
+encuesta %>%
+  mutate(religion = fct_lump(religion, other_level = "Otra")) %>%
+  count(religion)
+# usar el parámetro n para especificar cuántos grupos (excluyendo otros) queremos colapsar:
+encuesta %>%
+  mutate(religion = fct_lump(religion, n = 10, other_level = "Otra")) %>%
+  count(religion, sort = TRUE) %>%
+  print(n = Inf)
+```

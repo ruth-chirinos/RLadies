@@ -1,0 +1,292 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Trainer: Susana Yana Avila
+```{r}
+library(tidyverse)
+library(datos)
+library(tidyr)
+```
+```{r}
+tabla1
+tabla2
+tabla3
+tabla4a
+tabla4b
+```
+<h3>12.2 Datos ordenados</h3>
+```{r}
+# Calcular tasa por cada 10,000 habitantes
+tabla1 %>%
+  mutate(tasa = casos / poblacion * 10000)
+# Calcular casos por anio
+tabla1 %>%
+  count(anio, wt = casos)
+```
+
+
+<h3> 12.3 Pivotar </h3>
+<h3> 12.3.1 Datos “largos” </h3>
+```{r}
+# pivot_longer
+tabla4a
+tabla4a %>%
+  pivot_longer(cols = c('1999','2000'),names_to = "anio", values_to = "casos")
+# 
+tabla4b
+tabla4b %>%
+  pivot_longer(cols = c('1999','2000'), names_to = "anio", values_to = "población")
+```
+
+```{r}
+# Unir tablas
+tidy4a <- tabla4a %>%
+  pivot_longer(cols = c('1999', '2000'), names_to = "anio", values_to = "casos")
+
+tidy4b <- tabla4b %>%
+  pivot_longer(cols = c('1999', '2000'), names_to = "anio", values_to = "poblacion")
+
+left_join(tidy4a,tidy4b)
+```
+
+<h3> 12.3.2 Datos “anchos” </h3>
+
+```{r}
+tabla2
+tabla2 %>%
+  pivot_wider(names_from = tipo, values_from = cuenta)
+```
+
+<h3>12.3.3 Ejercicios</h3>
+1. ¿Por qué pivot_longer() y pivot_wider() no son perfectamente simétricas? Observa cuidadosamente el siguiente ejemplo:
+```{r}
+(acciones <- tibble(
+  anio = c(2015, 2015, 2016, 2016),
+  semestre = c(1, 2, 1, 2),
+  retorno = c(1.88, 0.59, 0.92, 0.17))
+)
+acciones %>%
+  pivot_wider(names_from = anio, values_from = retorno) %>% 
+  pivot_longer('2015':'2016', names_to = "anio", values_to = "retorno")
+```
+(Sugerencia: observa los tipos de variables y piensa en los nombres de las columnas)
+
+`pivot_longer()` tiene el argumento `names_ptype`: por ejemplo: `names_ptype = list(year = double())`. ¿Qué es lo que hace dicho argumento?
+2. ¿Por qué falla el siguiente código?
+```{r}
+
+tabla4a %>%
+  pivot_longer(c('1999', '2000'), names_to = "anio", values_to = "casos")
+```
+Resp. Porque las variables son cadenas no números
+
+3. ¿Qué pasaría si trataras de pivotar esta tabla a lo ancho? ¿Por qué? ¿Cómo podrías agregar una nueva columna que identifique de manera única cada valor?
+```{r}
+(personas <- tribble(
+  ~nombre, ~nombres, ~valores,
+  #-----------------|--------|------
+  "Phillip Woods", "edad", 45,
+  "Phillip Woods", "estatura", 186,
+  "Phillip Woods", "edad", 50,
+  "Jessica Cordero", "edad", 37,
+  "Jessica Cordero", "estatura", 156)
+)
+#personas %>% pivot_wider(names_from = nombres,values_from = valores)
+
+personas %>%
+  group_by(nombre) %>%
+  mutate(row = row_number()) %>%
+  pivot_wider(names_from = nombres, values_from = valores) %>%
+  select(-row)
+```
+4. Ordena la siguiente tabla. ¿Necesitas alargarla o ensancharla? ¿Cuáles son las variables?
+```{r}
+(embarazo <- tribble(
+  ~embarazo, ~hombre, ~mujer,
+  "sí", NA, 10,
+  "no", 20, 12)
+)
+  
+embarazo %>%
+  pivot_longer(cols = c('hombre','mujer'), names_to = "sexo", values_to = "casos")
+```
+
+Resp. Se necesita alargar y las variables son: embarazo, sexo, casos
+
+<h3>12.4 Separar y unir </h3>
+<h3> 12.4.1 Separar </h3>
+```{r}
+tabla3
+# por default 
+tabla3 %>%
+  separate(tasa, into =  c("casos","población"))
+# usando un separador 
+tabla3 %>%
+  separate(tasa, into = c("casos","población"),sep = "/")
+# Nota: convertir de caractar a número
+tabla3 %>%
+  separate(tasa, into = c("casos", "población"), convert = TRUE)
+# 
+tabla3 %>%
+  separate(anio, into = c("siglo", "anio"), sep = 2)
+```
+
+<h3> 12.4.2 Unir </h3>
+```{r}
+(tabla5 <- tabla3 %>%
+  separate(anio, into = c("siglo", "anio"), sep = 2))
+# Por default
+tabla5 %>%
+  unite(nueva, siglo, anio)
+# Sin separador
+tabla5 %>%
+  unite(nueva, siglo, anio, sep = "")
+```
+
+<h3> 12.5 Valores faltantes </h3>
+```{r}
+(acciones <- tibble(
+  anio = c(2015, 2015, 2015, 2015, 2016, 2016, 2016),
+  trimestre = c(1, 2, 3, 4, 2, 3, 4),
+  retorno = c(1.88, 0.59, 0.35, NA, 0.92, 0.17, 2.66))
+)
+# convertir explícitos los valores faltantes implícitos 
+acciones %>%
+  spread(anio, retorno)
+# especificar na.rm = TRUE en gather() para dejar explícitos los valores faltantes implícitos:
+acciones %>%
+  pivot_wider(names_from = anio, values_from = retorno) %>% 
+  pivot_longer(
+    cols = c('2015', '2016'), 
+    names_to = "anio", 
+    values_to = "retorno", 
+    values_drop_na = TRUE
+  )
+# Usando complete():
+
+acciones %>%
+  complete(anio, trimestre)
+# Ejemplo para que el valor previo debe arrastrase hacia adelante
+(tratamiento <- tribble(
+  ~sujeto, ~tratamiento, ~respuesta,
+  "Derrick Whitmore", 1, 7,
+  NA, 2, 10,
+  NA, 3, 9,
+  "Katherine Burke", 1, 4)
+)
+# completar los valores faltantes usando fill()
+tratamiento %>%
+  fill(sujeto)
+```
+
+<h3> 12.6 Estudio de caso </h3>
+```{r}
+glimpse(oms)
+#head(oms)
+#View(oms)
+summary(oms)
+oms
+```
+
+```{r}
+#?oms
+# De ancho a largo
+oms1 <- oms %>%
+  pivot_longer(
+    cols = nuevos_fpp_h014:nuevosrecaida_m65, 
+    names_to = "clave", 
+    values_to = "casos", 
+    values_drop_na = TRUE
+  )
+oms1
+```
+
+```{r}
+# Conteo de la columna clave
+(oms1%>%
+  count(clave))
+# Cambiar el nombre de la columna "clave"
+(oms2 <- oms1 %>%
+  mutate(clave = stringr::str_replace(clave, "nuevosrecaida", "nuevos_recaida")))
+# Separar la variable "clave" según el separador "_"
+(oms3 <- oms2 %>%
+  separate(clave, c("nuevos", "tipo", "sexo_edad"), sep = "_"))
+# La variable "nuevos" es un constante en el ds
+(oms3 %>%
+  count(nuevos))
+# Eliminar columnas "iso2", "iso3", "nuevos" que son redundantes en el ds
+(oms4 <- oms3 %>%
+  select(-iso2,-iso3,-nuevos))
+# Separar sexo_edad por primer caracter
+(oms5 <- oms4 %>%
+  separate(sexo_edad, c("sexo", "edad"), sep = 1))
+``` 
+
+Usando pipes
+```{r}
+(oms %>%
+  pivot_longer(
+    cols = nuevos_fpp_h014:nuevosrecaida_m65,
+    names_to = "clave", 
+    values_to = "valor", 
+    values_drop_na = TRUE) %>%
+  mutate(clave = stringr::str_replace(clave, "nuevosrecaida", "nuevos_recaida")) %>%
+  separate(clave, c("nuevos", "tipo", "sexo_edad")) %>%
+  select(-nuevos, -iso2, -iso3) %>%
+  separate(sexo_edad, c("sexo", "edad"), sep = 1))
+```
+
+<h3>12.6.1 Ejercicios</h3>
+1. En este caso de estudio fijamos values_drop_na = TRUE para hacer más simple el verificar que tenemos los valores correctos. ¿Es esto razonable? Piensa en cómo los valores faltantes están representados en este dataset. ¿Existen valores faltantes implícitos? ¿Cuál es la diferencia entre NA y cero?
+```{r}
+(oms %>%
+  pivot_longer(
+    cols = nuevos_fpp_h014:nuevosrecaida_m65,
+    names_to = "clave", 
+    values_to = "valor", 
+    values_drop_na = FALSE) %>%
+  mutate(clave = stringr::str_replace(clave, "nuevosrecaida", "nuevos_recaida")) %>%
+  separate(clave, c("nuevos", "tipo", "sexo_edad")) %>%
+  select(-nuevos, -iso2, -iso3) %>%
+  separate(sexo_edad, c("sexo", "edad"), sep = 1))
+```
+Reps. En este caso los valores faltantes explícitos pueden no ser tan importantes. Los valores faltantes estan como explícitos porque están representados por NA. Los valores ausentes no permiten operaciones(suma, resta, etc.) y los ceros si lo hacen. 
+
+2. ¿Qué ocurre si omites la aplicación de mutate()? (mutate(clave = stringr::str_replace(clave, "nuevosrecaida", "nuevos_recaida")))
+```{r}
+(oms %>%
+  pivot_longer(
+    cols = nuevos_fpp_h014:nuevosrecaida_m65,
+    names_to = "clave", 
+    values_to = "valor", 
+    values_drop_na = TRUE) %>%
+  #mutate(clave = stringr::str_replace(clave, "nuevosrecaida", "nuevos_recaida")) %>%
+  separate(clave, c("nuevos", "tipo", "sexo_edad")) %>%
+  select(-nuevos, -iso2, -iso3) %>%
+  separate(sexo_edad, c("sexo", "edad"), sep = 1))
+```
+
+Resp. Genera valores explícitos (NA)
+3. Afirmamos que iso2 e iso3 son redundantes respecto a pais. Confirma esta aseveración.
+Resp. Según su documentación el primero es: código ISO de dos dígitos del país y el segundo es: código ISO de tres dígitos del país.
+
+4. Para cada país, año y sexo calcula el total del número de casos de tuberculosis. Crea una visualización informativa de los datos
+```{r}
+(oms1<-oms %>%
+  pivot_longer(
+    cols = nuevos_fpp_h014:nuevosrecaida_m65,
+    names_to = "clave", 
+    values_to = "valor", 
+    values_drop_na = TRUE) %>%
+  mutate(clave = stringr::str_replace(clave, "nuevosrecaida", "nuevos_recaida")) %>%
+  separate(clave, c("nuevos", "tipo", "sexo_edad")) %>%
+  select(-nuevos, -iso2, -iso3) %>%
+  separate(sexo_edad, c("sexo", "edad"), sep = 1))
+
+(oms1 %>%
+  group_by(pais, anio, sexo) %>%
+  count(anio, wt = valor))%>%
+  ggplot(mapping = aes(x = anio, y= n, color = sexo)) + 
+  geom_smooth(se = FALSE, method = "gam",formula = y ~ s(x, bs = "cs"))
+```
